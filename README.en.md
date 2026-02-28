@@ -47,7 +47,9 @@ This repository currently focuses on the fishing logic, parameters, and experime
 
 ## Demo Video
 
-- 3× speed: [`auto-fishing-3x.mp4`](auto-fishing-3x.mp4)
+3× speed:
+
+<video src="https://github.com/user-attachments/assets/145347b2-1592-4b85-85d5-c32b27117bb0" controls width="100%"></video>
 
 ## Features
 

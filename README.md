@@ -47,7 +47,9 @@
 
 ## 演示视频
 
-- 3×速：[`auto-fishing-3x.mp4`](auto-fishing-3x.mp4)
+3倍速：
+
+<video src="https://github.com/user-attachments/assets/145347b2-1592-4b85-85d5-c32b27117bb0" controls width="100%"></video>
 
 ## 功能特性
 
