@@ -514,7 +514,7 @@ def main(argv: Sequence[str]) -> int:
     parser.add_argument(
         "logs",
         nargs="*",
-        help="自动钓鱼日志文件路径（默认自动找 data/logs/自动钓鱼日志.csv 或 自动钓鱼日志.csv）",
+        help="log.csv文件路径（默认自动找 data/logs/log.csv 或 log.csv）",
     )
     parser.add_argument("--config", default="config.ini", help="用于对比当前配置的 config.ini 路径")
 
@@ -547,7 +547,7 @@ def main(argv: Sequence[str]) -> int:
         "--trim",
         type=float,
         default=0.05,
-        help="截尾比例（例如 0.05 表示去掉最大 5% 残差样本后再拟合一次）",
+        help="截尾比例（例如 0.05 表示去掉最大 5%% 残差样本后再拟合一次）",
     )
 
     parser.add_argument(
@@ -563,15 +563,15 @@ def main(argv: Sequence[str]) -> int:
     logs = list(args.logs)
     if not logs:
         candidates = [
-            "data/logs/自动钓鱼日志.csv",
-            "自动钓鱼日志.csv",
+            "data/logs/log.csv",
+            "log.csv",
         ]
         for c in candidates:
             if os.path.exists(c):
                 logs = [c]
                 break
         if not logs:
-            print("未指定日志文件，且未找到默认的 自动钓鱼日志.csv", file=sys.stderr)
+            print("未指定日志文件，且未找到默认的 log.csv", file=sys.stderr)
             return 2
 
     all_segments: List[Segment] = []
@@ -702,7 +702,7 @@ def main(argv: Sequence[str]) -> int:
     print("（MPC 使用 sim_horizon 步预测，单步最优参数不一定多步最优）")
 
     # 构建连续帧序列（每个 segment 独立）
-    HORIZON = 8  # 与 config 的 bb_sim_horizon 一致
+    HORIZON = 1  # 与 config 的 bb_sim_horizon 一致
 
     def _multistep_mean_err(
         segments: Sequence[Segment],

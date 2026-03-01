@@ -26,12 +26,15 @@
 - [Demo Video](#demo-video)
 - [Features](#features)
 - [Target World](#target-world)
+- [Download](#download)
 - [Quick Start](#quick-start)
+- [Tuning & Adaptation](#tuning--adaptation)
 - [Build](#build)
 - [Configuration](#configuration)
 - [Logging \& Debugging](#logging--debugging)
 - [Experimental Scripts (Optional)](#experimental-scripts-optional)
 - [Project Layout](#project-layout)
+- [Support & Contributing](#support--contributing)
 - [Disclaimer](#disclaimer)
 - [License](#license)
 
@@ -68,6 +71,10 @@ This project is mainly tuned for **FISHǃ**:
 
 Templates, thresholds, and ROIs are calibrated for the current UI of this world. If the world/UI updates, re-capture templates under `Resource-VRChat/` and adjust `config.ini`.
 
+## Download
+
+Head to the [Releases](https://github.com/abligail/vrc-fish/releases) page to download the latest pre-built executable.
+
 ## Quick Start
 
 1. In VRChat display/graphics settings, set the resolution to `1280×960` (matches the default templates in this repo).
@@ -79,6 +86,14 @@ Notes:
 - The project enables `RequireAdministrator` by default, so the app may require admin privileges.
 - For stable template matching, the app can force VRChat client-area resolution via `force_resolution`.
 - The app reads `config.ini` from the current working directory and loads templates from `resource_dir` (default `Resource-VRChat/`). Run it from the repo root, or copy `config.ini` and `Resource-VRChat/` next to the executable.
+
+## Tuning & Adaptation
+
+The bundled templates and default parameters are based on my own fishing spot (the **end of the wooden pier at Coconut Bay**, the starting island, with an avatar height of **1.1 m**). Different positions, avatars, and fishing rods may require adjustments:
+
+- **Lots of "miss" in the logs**: The most effective fix is to take your own screenshots at your fishing spot, crop the UI elements, and replace the images in `Resource-VRChat/`. You can also tweak the matching thresholds (`bite_threshold`, `fish_icon_threshold`, etc.) and scale parameters (`fish_scale_*`, `track_scale_*`) in `config.ini`.
+- **Fish above Green rarity**: Tracking of fast-moving fish (Blue, Purple, and other rare fish) is still being improved. The repo currently only includes icon templates for Green, Purple, and White fish—other colors are more likely to lose tracking. Contributions of additional fish icon templates are welcome.
+- **Different PC / display environments**: Detection accuracy is sensitive to screen resolution and rendering settings. You may need to adjust thresholds and control parameters for your specific setup.
 
 ## Build
 
@@ -128,6 +143,12 @@ Scripts live in `scripts/`:
 - `Resource-VRChat/`: UI templates for FISHǃ
 - `data/`: logs, sample data, ML weights
 - `scripts/`: analysis / fitting / training utilities
+
+## Support & Contributing
+
+If you find this project helpful, a Star would be much appreciated!
+
+I have limited time to maintain this regularly, so contributions from anyone interested are very welcome :)
 
 ## Disclaimer
 

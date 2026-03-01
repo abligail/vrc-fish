@@ -120,6 +120,17 @@ struct g_config {
 	double fish_velocity_cap;
 	double base_dt_ms;
 
+	// 鱼预测增强（方向A）
+	int fish_bounce_predict;        // 1=MPC中鱼碰轨道边界会反弹
+	double fish_accel_alpha;        // 鱼加速度EMA平滑系数（0~1）
+	double fish_vel_decay;          // MPC中鱼速度逐步衰减系数（0~1，1=不衰减）
+	double fish_accel_cap;          // 鱼加速度上限（px/基准帧^2）
+
+	// 偏差快速响应（方向D）
+	int reactive_override;          // 1=启用偏差快速响应
+	double reactive_dev_ratio;      // 触发阈值：偏差 > sliderH * ratio 时触发
+	double reactive_grow_threshold; // 偏差增长速度阈值（px/基准帧）
+
 	bool vr_debug;
 	bool vr_debug_pic;
 	string vr_debug_dir;
@@ -216,6 +227,15 @@ void loadConfig() {
 	config.slider_velocity_cap = ini.getDouble("vrchat_fish", "slider_velocity_cap", 30.0);
 	config.fish_velocity_cap = ini.getDouble("vrchat_fish", "fish_velocity_cap", 15.0);
 	config.base_dt_ms = ini.getDouble("vrchat_fish", "base_dt_ms", 50.0);
+
+	config.fish_bounce_predict = ini.getInt("vrchat_fish", "fish_bounce_predict", 1);
+	config.fish_accel_alpha = ini.getDouble("vrchat_fish", "fish_accel_alpha", 0.4);
+	config.fish_vel_decay = ini.getDouble("vrchat_fish", "fish_vel_decay", 0.92);
+	config.fish_accel_cap = ini.getDouble("vrchat_fish", "fish_accel_cap", 5.0);
+
+	config.reactive_override = ini.getInt("vrchat_fish", "reactive_override", 1);
+	config.reactive_dev_ratio = ini.getDouble("vrchat_fish", "reactive_dev_ratio", 0.55);
+	config.reactive_grow_threshold = ini.getDouble("vrchat_fish", "reactive_grow_threshold", 3.0);
 
 	config.vr_debug = ini.getInt("vrchat_fish", "debug", 1);
 	config.vr_debug_pic = ini.getInt("vrchat_fish", "debug_pic", 0);
@@ -1168,6 +1188,10 @@ void fishVrchat() {
 	int prevFishY = 0;             // 上一帧鱼 Y（用于 fishVel）
 	bool hasPrevFish = false;
 	double smoothFishVel = 0.0;    // EMA 平滑鱼速度（px/基准帧）
+	double prevSmoothFishVel = 0.0; // 上一帧的 smoothFishVel（用于算加速度）
+	double smoothFishAccel = 0.0;  // EMA 平滑鱼加速度（px/基准帧^2）
+	double prevDeviation = 0.0;    // 上一帧鱼与滑块中心偏差（用于方向D）
+	bool hasPrevDeviation = false; // 是否有上一帧偏差
 	unsigned long long prevCtrlTs = 0; // 上一帧时间戳（ms）
 	bool hasPrevTs = false;
 	double lastDtRatio = 1.0;      // 实际dt / 基准dt，用于MPC缩放
@@ -1640,6 +1664,9 @@ void fishVrchat() {
 					if (dtMs > 800.0) decayFactor = 0.0;
 					smoothVelocity *= decayFactor;
 					smoothFishVel *= decayFactor;
+					smoothFishAccel *= decayFactor;
+					prevSmoothFishVel = smoothFishVel;
+					hasPrevDeviation = false;
 					hasPrevSlider = false;
 					hasPrevFish = false;
 				}
@@ -1667,6 +1694,20 @@ void fishVrchat() {
 					if (fishVelCap < 1.0) fishVelCap = 1.0;
 					if (smoothFishVel > fishVelCap) smoothFishVel = fishVelCap;
 					if (smoothFishVel < -fishVelCap) smoothFishVel = -fishVelCap;
+				}
+
+				// ── 方向A：鱼加速度 EMA 追踪 ──
+				{
+					double accelAlpha = config.fish_accel_alpha;
+					if (accelAlpha < 0.05) accelAlpha = 0.05;
+					if (accelAlpha > 1.0) accelAlpha = 1.0;
+					double rawAccel = smoothFishVel - prevSmoothFishVel;
+					smoothFishAccel = accelAlpha * rawAccel + (1.0 - accelAlpha) * smoothFishAccel;
+					double accelCap = config.fish_accel_cap;
+					if (accelCap < 0.5) accelCap = 0.5;
+					if (smoothFishAccel > accelCap) smoothFishAccel = accelCap;
+					if (smoothFishAccel < -accelCap) smoothFishAccel = -accelCap;
+					prevSmoothFishVel = smoothFishVel;
 				}
 
 				if (config.ml_mode == 1) {
@@ -1735,11 +1776,17 @@ void fishVrchat() {
 
 					// 模拟一条轨迹，返回累积代价（越小越好）
 					// 代价 = sum of (鱼到安全区中心的距离 if 在区外, 0 if 在区内)
+					double fishVelDecay = config.fish_vel_decay;
+					if (fishVelDecay < 0.5) fishVelDecay = 0.5;
+					if (fishVelDecay > 1.0) fishVelDecay = 1.0;
+					bool fishBounce = (config.fish_bounce_predict != 0);
+
 					auto simCost = [&](bool press) -> double {
 						double sVel = smoothVelocity;   // 滑块当前速度
 						double sCY  = (double)sliderCY; // 滑块中心 Y
 						double fY   = (double)fishY;    // 鱼 Y
-						double fVel = smoothFishVel;    // 鱼速度（近似匀速）
+						double fVel = smoothFishVel;    // 鱼速度
+						double fAcc = smoothFishAccel;  // 鱼加速度
 						double cost = 0.0;
 
 						// 轨道物理边界（固定ROI上下各扩展 padY 用于检测，这里扣回）
@@ -1764,8 +1811,23 @@ void fishVrchat() {
 								sVel = -sVel * 0.8;
 							}
 
-							// 鱼位置更新（匀速预测）
+							// ── 方向A：鱼位置更新（加速度预测 + 速度衰减 + 边界反弹） ──
+							fVel += fAcc;                  // 加速度影响速度
+							fVel *= fishVelDecay;          // 远期速度逐步衰减（不确定性增大）
 							fY += fVel;
+
+							// 鱼碰轨道边界反弹
+							if (fishBounce) {
+								if (fY < trackCYMin) {
+									fY = trackCYMin;
+									fVel = -fVel * 0.5;
+									fAcc = 0.0; // 反弹后加速度失效
+								} else if (fY > trackCYMax) {
+									fY = trackCYMax;
+									fVel = -fVel * 0.5;
+									fAcc = 0.0;
+								}
+							}
 
 							// 滑块边界
 							double halfH = (double)sliderH / 2.0;
@@ -1811,6 +1873,32 @@ void fishVrchat() {
 						wantHold = (costPress < costRelease);
 					}
 
+					// ── 方向D：偏差快速响应 ──
+					// 当鱼与滑块偏差大且在快速增长时，直接覆盖MPC决策
+					bool reactiveTriggered = false;
+					if (config.reactive_override) {
+						double deviation = (double)(fishY - sliderCY); // 正=鱼在下方
+						double absDev = abs(deviation);
+						double devThreshold = (double)sliderH * config.reactive_dev_ratio;
+						if (devThreshold < 10.0) devThreshold = 10.0;
+
+						if (absDev > devThreshold && hasPrevDeviation) {
+							// 偏差增长速度（归一化到基准帧）
+							double devGrowth = (absDev - abs(prevDeviation)) / lastDtRatio;
+							if (devGrowth > config.reactive_grow_threshold) {
+								// 鱼在下方且偏差在增大 → 应该松开（让滑块往下）
+								// 鱼在上方且偏差在增大 → 应该按住（让滑块往上）
+								bool reactiveHold = (deviation < 0); // 鱼在上方
+								if (reactiveHold != wantHold) {
+									wantHold = reactiveHold;
+									reactiveTriggered = true;
+								}
+							}
+						}
+						prevDeviation = deviation;
+						hasPrevDeviation = true;
+					}
+
 					if (wantHold && !holding) {
 						mouseLeftDown();
 						holding = true;
@@ -1830,9 +1918,11 @@ void fishVrchat() {
 								<< " sH=" << sliderH
 								<< " sv=" << (int)smoothVelocity
 								<< " fv=" << (int)smoothFishVel
+								<< " fa=" << (int)smoothFishAccel
 								<< " cP=" << (int)costPress
 								<< " cR=" << (int)costRelease
-								<< " hold=" << (holding ? 1 : 0);
+								<< " hold=" << (holding ? 1 : 0)
+								<< (reactiveTriggered ? " [reactive]" : "");
 							writeVrLogLine(oss.str(), config.vr_debug);
 							lastCtrlLogMs = t;
 						}
