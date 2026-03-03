@@ -60,6 +60,8 @@ struct g_config {
 	int target_height;
 	int capture_interval_ms;
 	int cast_delay_ms;
+	int cast_mouse_move_dx;
+	int cast_mouse_move_dy;
 	int bite_timeout_ms;
 	int minigame_enter_delay_ms;
 	int cleanup_wait_before_ms;
@@ -181,6 +183,8 @@ void loadConfig() {
 	config.target_height = ini.getInt("vrchat_fish", "target_height", 960);
 	config.capture_interval_ms = ini.getInt("vrchat_fish", "capture_interval_ms", 80);
 	config.cast_delay_ms = ini.getInt("vrchat_fish", "cast_delay_ms", 200);
+	config.cast_mouse_move_dx = ini.getInt("vrchat_fish", "cast_mouse_move_dx", 0);
+	config.cast_mouse_move_dy = ini.getInt("vrchat_fish", "cast_mouse_move_dy", 0);
 	config.bite_timeout_ms = ini.getInt("vrchat_fish", "bite_timeout_ms", 12000);
 	config.minigame_enter_delay_ms = ini.getInt("vrchat_fish", "minigame_enter_delay_ms", 150);
 	config.cleanup_wait_before_ms = ini.getInt("vrchat_fish", "cleanup_wait_before_ms", 800);
@@ -1286,6 +1290,22 @@ static void mouseLeftClickCentered(int delayMs = 40) {
 	sendMouseLeftRaw(MOUSEEVENTF_LEFTUP, "leftup");
 }
 
+static void mouseMoveRelative(int dx, int dy, const char* phaseTag) {
+	if (dx == 0 && dy == 0) {
+		return;
+	}
+	activateGameWindow();
+	INPUT input{};
+	input.type = INPUT_MOUSE;
+	input.mi.dwFlags = MOUSEEVENTF_MOVE;
+	input.mi.dx = dx;
+	input.mi.dy = dy;
+	input.mi.time = NULL;
+	if (SendInput(1, &input, sizeof(INPUT)) != 1 && config.vr_debug) {
+		std::cout << "[vrchat_fish] SendInput " << phaseTag << " failed err=" << GetLastError() << endl;
+	}
+}
+
 static void keyTapVk(WORD vk, int delayMs = 30) {
 	activateGameWindow();
 	INPUT input{};
@@ -1864,6 +1884,9 @@ void fishVrchat() {
 	int biteOkFrames = 0;
 	int minigameMissingFrames = 0;
 	bool holding = false;
+	bool castMouseMoved = false;
+	int castMouseMoveDx = 0;
+	int castMouseMoveDy = 0;
 	unsigned long long lastCtrlLogMs = 0;
 	int prevSliderY = 0;
 	bool hasPrevSlider = false;
@@ -2004,6 +2027,20 @@ void fishVrchat() {
 		}
 
 		sleepWithPause(config.cleanup_wait_after_ms);
+
+			// 一轮流程结束后，将鼠标移动回去（与抛竿后的偏移相反）
+			if (castMouseMoved) {
+				mouseMoveRelative(-castMouseMoveDx, -castMouseMoveDy, "cast_mouse_restore");
+				if (config.vr_debug || vrLogFile.is_open()) {
+					std::ostringstream oss;
+					oss << "[vrchat_fish] cast mouse restore dx=" << -castMouseMoveDx
+						<< " dy=" << -castMouseMoveDy;
+					writeVrLogLine(oss.str(), config.vr_debug);
+				}
+				castMouseMoved = false;
+				castMouseMoveDx = 0;
+				castMouseMoveDy = 0;
+			}
 	};
 
 	while (true) {
@@ -2020,7 +2057,26 @@ void fishVrchat() {
 				mouseLeftUp();
 				holding = false;
 			}
+			// 兜底：若上一轮未恢复，先恢复一次避免累积偏移
+			if (castMouseMoved) {
+				mouseMoveRelative(-castMouseMoveDx, -castMouseMoveDy, "cast_mouse_restore_before_cast");
+				castMouseMoved = false;
+				castMouseMoveDx = 0;
+				castMouseMoveDy = 0;
+			}
 			mouseLeftClickCentered();
+			if (config.cast_mouse_move_dx != 0 || config.cast_mouse_move_dy != 0) {
+				mouseMoveRelative(config.cast_mouse_move_dx, config.cast_mouse_move_dy, "cast_mouse_move");
+				castMouseMoved = true;
+				castMouseMoveDx = config.cast_mouse_move_dx;
+				castMouseMoveDy = config.cast_mouse_move_dy;
+				if (config.vr_debug || vrLogFile.is_open()) {
+					std::ostringstream oss;
+					oss << "[vrchat_fish] cast mouse move dx=" << castMouseMoveDx
+						<< " dy=" << castMouseMoveDy;
+					writeVrLogLine(oss.str(), config.vr_debug);
+				}
+			}
 			Sleep(config.cast_delay_ms);
 			biteOkFrames = 0;
 			switchState(VrFishState::WaitBite);

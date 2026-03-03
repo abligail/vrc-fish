@@ -42,6 +42,7 @@ Resource-New/
 docs/
 data/
 dist/
+example/
 *.user
 *.suo
 *.aps

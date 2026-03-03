@@ -42,6 +42,12 @@
 
 ---
 
+## Acknowledgements
+
+- Thanks to my good friend **aflotia** (VRChat player) for tuning better parameters and contributing template images
+
+---
+
 ## Overview
 
 A small Windows tool that assists the VRChat fishing minigame by detecting key UI elements (OpenCV template matching / simple brightness-based detection) and controlling the minigame via <kbd>Left Mouse Button</kbd> press/release.
@@ -91,8 +97,9 @@ Notes:
 
 The bundled templates and default parameters are based on my own fishing spot (the **end of the wooden pier at Coconut Bay**, the starting island, with an avatar height of **1.1 m**). Different positions, avatars, and fishing rods may require adjustments:
 
+The current parameters can already reliably catch the vast majority of fish. Further optimizations are welcome:
+
 - **Lots of "miss" in the logs**: The most effective fix is to take your own screenshots at your fishing spot, crop the UI elements, and replace the images in `Resource-VRChat/`. You can also tweak matching thresholds (`bite_threshold`, `fish_icon_threshold`, etc.) and the track scale/angle scan parameters (`track_scale_*` / `track_scale_min`/`track_scale_max`/`track_scale_step` / `track_angle_*`) in `config.ini`.
-- **Fish above Green rarity**: Tracking of fast-moving fish (Blue, Purple, and other rare fish) is still being improved. The repo currently only includes icon templates for Green, Purple, and White fish—other colors are more likely to lose tracking. Contributions of additional fish icon templates are welcome.
 - **Different PC / display environments**: Detection accuracy is sensitive to screen resolution and rendering settings. You may need to adjust thresholds and control parameters for your specific setup.
 
 ## Build
@@ -113,6 +120,7 @@ Config file: `config.ini` (the file contains inline comments, mainly in Chinese)
 Key highlights:
 - Window matching: `window_class`, `window_title_contains`
 - Resolution: `force_resolution`, `target_width`, `target_height`
+- After cast: `cast_mouse_move_dx`, `cast_mouse_move_dy` (moves the mouse slightly; restored at end of the round)
 - Thresholds: `bite_threshold`, `minigame_threshold`, `fish_icon_threshold`, `slider_threshold`
 - Template matching: track lock uses `track_scale_*` / `track_scale_min`/`track_scale_max`/`track_scale_step` / `track_angle_*` (range-based scale+angle scan supported)
 - Cleanup loop: `cleanup_*`, `cleanup_reel_key`

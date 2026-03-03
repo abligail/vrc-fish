@@ -22,6 +22,7 @@
 <details>
   <summary><b>目录</b></summary>
 
+- [致谢](#致谢)
 - [项目简介](#项目简介)
 - [演示视频](#演示视频)
 - [功能特性](#功能特性)
@@ -42,6 +43,12 @@
 
 ---
 
+## 致谢
+
+- 感谢我的好友 **aflotia**（VRChat 玩家）调试更加优秀的参数以及贡献素材图片
+
+---
+
 ## 项目简介
 
 一个运行在 Windows 上的小工具：通过 OpenCV 对 VRChat 钓鱼界面的关键元素做模板匹配/颜色检测，并用“鼠标左键按住/松开”的方式辅助完成钓鱼小游戏的操作。
@@ -50,7 +57,7 @@
 
 ## 演示视频
 
-3倍速：
+4倍速：
 
 <video src="https://github.com/user-attachments/assets/9490c80f-6a6e-45b1-b329-977a9c3e77ec" controls></video>
 
@@ -91,8 +98,9 @@
 
 仓库中的模板截图和默认参数基于我自己的钓鱼位点（地图初始岛屿**椰子湾的木栈桥尽头**，模型高度 **1.1 米**），不同的站位、模型和鱼竿可能需要做以下调整：
 
+现有参数已经能够稳定钓起绝大部分鱼了，欢迎继续优化：
+
 - **日志中出现大量 miss**：最有效的方法是在你自己的位点手动截图/抠图，替换 `Resource-VRChat/` 文件夹中的模板图片，或微调 `config.ini` 中的匹配阈值（`bite_threshold`、`fish_icon_threshold` 等）以及轨道的缩放/旋转搜索参数（`track_scale_*` / `track_scale_min`/`track_scale_max`/`track_scale_step` / `track_angle_*`）。
-- **绿色稀有度以上的鱼**：目前对快速运动的鱼（蓝色、紫色等稀有鱼）的跟踪仍在优化中；同时仓库只截取了绿、紫、白三种鱼的图标模板，其他颜色的鱼容易出现丢追，欢迎自行截取补充。
 - **不同电脑/显示环境**：识别效果与屏幕分辨率、渲染设置关系较大，具体的匹配阈值和控制参数可能需要根据自己的环境做调整。
 
 ## 构建
@@ -116,6 +124,7 @@
 | `vrchat_fish` | `window_class` / `window_title_contains` | 定位 VRChat 窗口（默认 `UnityWndClass` + 标题含 `VRChat`） |
 | `vrchat_fish` | `force_resolution` / `target_width` / `target_height` | 是否强制调整 VRChat 客户区分辨率 |
 | `vrchat_fish` | `capture_interval_ms` / `control_interval_ms` | 截图轮询与控制循环间隔 |
+| `vrchat_fish` | `cast_mouse_move_dx` / `cast_mouse_move_dy` | 抛竿后鼠标相对位移（例如轻微右移）；一轮结束会反向移回 |
 | `vrchat_fish` | `bite_threshold` / `minigame_threshold` / `fish_icon_threshold` / `slider_threshold` | 关键模板匹配阈值（0~1） |
 | `vrchat_fish` | `track_scale_*` / `track_scale_min`/`track_scale_max`/`track_scale_step` / `track_angle_min`/`track_angle_max`/`track_angle_step` | 轨道模板的缩放/旋转搜索参数（用于锁定轨道 ROI），支持按范围自动扫尺度+小角度旋转匹配 |
 | `vrchat_fish` | `cleanup_*` / `cleanup_reel_key` | 结算/清理到下一轮：等待、点击次数、收杆按键等 |
