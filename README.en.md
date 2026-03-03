@@ -22,19 +22,20 @@
 <details>
   <summary><b>Table of Contents</b></summary>
 
+- [Acknowledgements](#acknowledgements)
 - [Overview](#overview)
 - [Demo Video](#demo-video)
 - [Features](#features)
 - [Target World](#target-world)
 - [Download](#download)
 - [Quick Start](#quick-start)
-- [Tuning & Adaptation](#tuning--adaptation)
+- [Tuning \& Adaptation](#tuning--adaptation)
 - [Build](#build)
 - [Configuration](#configuration)
 - [Logging \& Debugging](#logging--debugging)
 - [Experimental Scripts (Optional)](#experimental-scripts-optional)
 - [Project Layout](#project-layout)
-- [Support & Contributing](#support--contributing)
+- [Support \& Contributing](#support--contributing)
 - [Disclaimer](#disclaimer)
 - [License](#license)
 
@@ -58,7 +59,7 @@ This repository currently focuses on the fishing logic, parameters, and experime
 
 3× speed:
 
-<video src="https://github.com/user-attachments/assets/9490c80f-6a6e-45b1-b329-977a9c3e77ec" controls></video>
+<video src="https://github.com/user-attachments/assets/06b362be-6b1d-4f4d-ab5d-a4811a0f8a64" controls></video>
 
 ## Features
 
@@ -95,11 +96,49 @@ Notes:
 
 ## Tuning & Adaptation
 
-The bundled templates and default parameters are based on my own fishing spot (the **end of the wooden pier at Coconut Bay**, the starting island, with an avatar height of **1.1 m**). Different positions, avatars, and fishing rods may require adjustments:
+The bundled templates and default parameters are based on my own fishing spot (the **end of the wooden pier at Coconut Bay**, the starting island, with an avatar height of **1.1 m**). The current parameters can already reliably catch the vast majority of fish. Further optimizations are welcome!
 
-The current parameters can already reliably catch the vast majority of fish. Further optimizations are welcome:
+> **Tip**: It is recommended to first go to the same spot described above (end of the wooden pier at Coconut Bay, avatar height ~1.1 m) to verify that the program works correctly in your environment before trying other locations.
 
-- **Lots of "miss" in the logs**: The most effective fix is to take your own screenshots at your fishing spot, crop the UI elements, and replace the images in `Resource-VRChat/`. You can also tweak matching thresholds (`bite_threshold`, `fish_icon_threshold`, etc.) and the track scale/angle scan parameters (`track_scale_*` / `track_scale_min`/`track_scale_max`/`track_scale_step` / `track_angle_*`) in `config.ini`.
+If detection is not working well in your setup, adjust in the following priority:
+
+### 1. Adjust Track Template Scale Range (Most Common)
+
+Different positions, avatar heights, fishing rods, and resolution/UI scaling will cause the slider track to appear at different sizes on screen. The program uses multi-scale template matching to handle this. The relevant parameters are:
+
+```ini
+track_scale_min=0.8
+track_scale_max=2
+track_scale_step=0.2
+```
+
+**How to adjust**: Run the program with `debug=1` and watch the console log for the `scale` value printed when the track is successfully matched (e.g. `scale=1.4`). Once you know the approximate scale range for your setup, narrow the search range around that value and reduce the step size for better precision. For example, if you observe scale values around `1.2~1.6`, set:
+
+```ini
+track_scale_min=1.0
+track_scale_max=1.8
+track_scale_step=0.1
+```
+
+- If the matched scale is close to `track_scale_min` or `track_scale_max`, the search range may be too narrow—expand it in the corresponding direction.
+- A smaller `track_scale_step` gives more accurate matching but increases computation. Usually `0.1~0.2` is sufficient.
+
+### 2. Keep the Slider Track as Vertical as Possible
+
+The program assumes the slider track is roughly vertical on screen. If your position/view angle causes noticeable tilt, there are two approaches:
+
+- **Recommended**: Adjust your in-game position or camera angle so the fishing track appears as vertical as possible on screen.
+- **Compensate via config**: Enable angle search parameters to let the program detect small rotations automatically:
+  ```ini
+  track_angle_min=-5.0
+  track_angle_max=5.0
+  track_angle_step=1.0
+  ```
+  You can check the `angle` value in the log output to confirm the actual tilt, then narrow the range and reduce the step size for better accuracy. Note that angle search multiplies computation cost, so only enable it when needed.
+
+### 3. Other Adjustments
+
+- **Lots of "miss" in the logs**: If tuning scale/angle doesn't help enough, the most effective fix is to take your own screenshots at your fishing spot, crop the UI elements, and replace the images in `Resource-VRChat/`. You can also tweak matching thresholds (`bite_threshold`, `fish_icon_threshold`, etc.) in `config.ini`.
 - **Different PC / display environments**: Detection accuracy is sensitive to screen resolution and rendering settings. You may need to adjust thresholds and control parameters for your specific setup.
 
 ## Build
