@@ -14,6 +14,7 @@
 #include "gs-public.h"
 #include "gs-opencv.h"
 #include "gs-mfc.h"
+#include <random>
 #pragma comment(lib, "opencv_core460.lib")
 #pragma comment(lib, "opencv_imgproc460.lib")
 #pragma comment(lib, "opencv_imgcodecs460.lib")
@@ -62,6 +63,10 @@ struct g_config {
 	int cast_delay_ms;
 	int cast_mouse_move_dx;
 	int cast_mouse_move_dy;
+	int cast_mouse_move_random_range;
+	int cast_mouse_move_delay_max;
+	int cast_mouse_move_duration_ms;   // 新增：移动持续时间（0=瞬间）
+	int cast_mouse_move_step_ms;       // 新增：步间间隔
 	int bite_timeout_ms;
 	int minigame_enter_delay_ms;
 	int cleanup_wait_before_ms;
@@ -185,6 +190,10 @@ void loadConfig() {
 	config.cast_delay_ms = ini.getInt("vrchat_fish", "cast_delay_ms", 200);
 	config.cast_mouse_move_dx = ini.getInt("vrchat_fish", "cast_mouse_move_dx", 0);
 	config.cast_mouse_move_dy = ini.getInt("vrchat_fish", "cast_mouse_move_dy", 0);
+	config.cast_mouse_move_random_range = ini.getInt("vrchat_fish", "cast_mouse_move_random_range", 0);
+	config.cast_mouse_move_delay_max = ini.getInt("vrchat_fish", "cast_mouse_move_delay_max", 0);
+	config.cast_mouse_move_duration_ms = ini.getInt("vrchat_fish", "cast_mouse_move_duration_ms", 0);
+	config.cast_mouse_move_step_ms = ini.getInt("vrchat_fish", "cast_mouse_move_step_ms", 30);
 	config.bite_timeout_ms = ini.getInt("vrchat_fish", "bite_timeout_ms", 12000);
 	config.minigame_enter_delay_ms = ini.getInt("vrchat_fish", "minigame_enter_delay_ms", 150);
 	config.cleanup_wait_before_ms = ini.getInt("vrchat_fish", "cleanup_wait_before_ms", 800);
@@ -2065,15 +2074,88 @@ void fishVrchat() {
 				castMouseMoveDy = 0;
 			}
 			mouseLeftClickCentered();
+
 			if (config.cast_mouse_move_dx != 0 || config.cast_mouse_move_dy != 0) {
-				mouseMoveRelative(config.cast_mouse_move_dx, config.cast_mouse_move_dy, "cast_mouse_move");
-				castMouseMoved = true;
-				castMouseMoveDx = config.cast_mouse_move_dx;
-				castMouseMoveDy = config.cast_mouse_move_dy;
+				// 1. 生成随机偏移后的最终位移
+				static std::random_device rd;
+				static std::mt19937 gen(rd());
+				int range = config.cast_mouse_move_random_range;
+				std::uniform_int_distribution<> dist(-range, range);
+				int finalDx = config.cast_mouse_move_dx + dist(gen);
+				int finalDy = config.cast_mouse_move_dy + dist(gen);
+
+				// 2. 随机延迟（最大延迟 cast_mouse_move_delay_max）
+				if (config.cast_mouse_move_delay_max > 0) {
+					std::uniform_int_distribution<> delayDist(0, config.cast_mouse_move_delay_max);
+					int delayMs = delayDist(gen);
+					sleepWithPause(delayMs);
+				}
+
+				// 3. 平滑移动（若配置了持续时间）
+				int durationMs = config.cast_mouse_move_duration_ms;
+				int stepMs = config.cast_mouse_move_step_ms;
+				if (durationMs > 0 && stepMs > 0) {
+					// 计算步数（向上取整，确保覆盖整个持续时间）
+					int steps = (durationMs + stepMs - 1) / stepMs;
+					if (steps < 1) steps = 1;
+
+					int remainingDx = finalDx;
+					int remainingDy = finalDy;
+
+					for (int i = 0; i < steps; i++) {
+						// 最后一步直接移动剩余量，避免浮点累积误差
+						int stepDx, stepDy;
+						if (i == steps - 1) {
+							stepDx = remainingDx;
+							stepDy = remainingDy;
+						}
+						else {
+							// 按时间比例分配位移（整数除法可能导致最后剩余，所以使用浮点取整）
+							double ratio = (double)stepMs / durationMs;
+							stepDx = (int)(finalDx * ratio);
+							stepDy = (int)(finalDy * ratio);
+						}
+
+						if (stepDx != 0 || stepDy != 0) {
+							mouseMoveRelative(stepDx, stepDy, "cast_mouse_move_step");
+						}
+
+						// 更新剩余位移
+						remainingDx -= stepDx;
+						remainingDy -= stepDy;
+
+						// 等待步间间隔（最后一步后不再等待）
+						if (i < steps - 1) {
+							sleepWithPause(stepMs);
+						}
+					}
+
+					// 记录最终总位移（用于后续恢复）
+					castMouseMoved = true;
+					castMouseMoveDx = finalDx;
+					castMouseMoveDy = finalDy;
+				}
+				else {
+					// 瞬间移动（原逻辑）
+					mouseMoveRelative(finalDx, finalDy, "cast_mouse_move");
+					castMouseMoved = true;
+					castMouseMoveDx = finalDx;
+					castMouseMoveDy = finalDy;
+				}
+
+				// 4. 日志输出
 				if (config.vr_debug || vrLogFile.is_open()) {
 					std::ostringstream oss;
-					oss << "[vrchat_fish] cast mouse move dx=" << castMouseMoveDx
-						<< " dy=" << castMouseMoveDy;
+					oss << "[vrchat_fish] cast mouse move dx=" << finalDx
+						<< " dy=" << finalDy
+						<< " (base: " << config.cast_mouse_move_dx
+						<< "," << config.cast_mouse_move_dy
+						<< " range=" << range
+						<< " delay=" << config.cast_mouse_move_delay_max << "ms";
+					if (durationMs > 0) {
+						oss << " smooth: dur=" << durationMs << "ms step=" << stepMs << "ms";
+					}
+					oss << ")";
 					writeVrLogLine(oss.str(), config.vr_debug);
 				}
 			}
