@@ -18,6 +18,21 @@
     <ClCompile Include="config\app_config.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="engine\controller.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\detectors.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\matcher.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\ml_model.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\template_store.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="infra\fs\path_utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -39,6 +54,21 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="core\types.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\controller.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\detectors.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\matcher.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ml_model.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\template_store.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="ini.h">
