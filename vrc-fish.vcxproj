@@ -155,6 +155,7 @@
     <ClCompile Include="config\app_config.cpp" />
     <ClCompile Include="engine\controller.cpp" />
     <ClCompile Include="engine\detectors.cpp" />
+    <ClCompile Include="engine\fish_engine.cpp" />
     <ClCompile Include="engine\matcher.cpp" />
     <ClCompile Include="engine\ml_model.cpp" />
     <ClCompile Include="engine\template_store.cpp" />
@@ -162,6 +163,7 @@
     <ClCompile Include="infra\log\logger.cpp" />
     <ClCompile Include="infra\win\input_api.cpp" />
     <ClCompile Include="infra\win\window_api.cpp" />
+    <ClCompile Include="runtime\runtime_context.cpp" />
     <ClCompile Include="vrc-fish.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -170,6 +172,7 @@
     <ClInclude Include="Ciclequeue.h" />
     <ClInclude Include="engine\controller.h" />
     <ClInclude Include="engine\detectors.h" />
+    <ClInclude Include="engine\fish_engine.h" />
     <ClInclude Include="engine\matcher.h" />
     <ClInclude Include="engine\ml_model.h" />
     <ClInclude Include="engine\template_store.h" />
@@ -180,6 +183,7 @@
     <ClInclude Include="infra\win\input_api.h" />
     <ClInclude Include="infra\win\window_api.h" />
     <ClInclude Include="ini.h" />
+    <ClInclude Include="runtime\runtime_context.h" />
     <ClInclude Include="gs-opencv.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

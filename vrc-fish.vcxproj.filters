@@ -24,6 +24,9 @@
     <ClCompile Include="engine\detectors.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="engine\fish_engine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="engine\matcher.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -45,6 +48,9 @@
     <ClCompile Include="infra\win\window_api.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="runtime\runtime_context.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="vrc-fish.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -60,6 +66,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="engine\detectors.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\fish_engine.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="engine\matcher.h">
@@ -99,6 +108,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="infra\win\window_api.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="runtime\runtime_context.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
