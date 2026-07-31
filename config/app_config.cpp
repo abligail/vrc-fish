@@ -107,7 +107,7 @@ bool loadAppConfig(const std::string& path, AppConfig* outConfig, std::string* e
 	config.cleanup_wait_before_ms = ini.getInt("vrchat_fish", "cleanup_wait_before_ms", 800);
 	config.cleanup_click_count = ini.getInt("vrchat_fish", "cleanup_click_count", 4);
 	config.cleanup_click_interval_ms = ini.getInt("vrchat_fish", "cleanup_click_interval_ms", 80);
-	config.cleanup_reel_key_name = ini.get("vrchat_fish", "cleanup_reel_key", "T");
+	config.cleanup_reel_key_name = ini.get("vrchat_fish", "reel_key", "T");
 	if (!parseKeyVal(config.cleanup_reel_key_name, &config.cleanup_reel_key, error)) {
 		return false;
 	}
